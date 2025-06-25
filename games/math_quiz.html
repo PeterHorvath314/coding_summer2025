@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quiz Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+            width: 400px;
+        }
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .hearts {
+            color: red;
+            font-size: 24px;
+        }
+        .score {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .problem {
+            font-size: 32px;
+            margin: 30px 0;
+        }
+        input {
+            width: 100px;
+            font-size: 20px;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 10px auto;
+            display: block;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            font-size: 16px;
+            margin: 20px auto 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #3e8e41;
+        }
+        .feedback {
+            height: 30px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .correct {
+            color: green;
+        }
+        .incorrect {
+            color: red;
+        }
+        .game-over {
+            font-size: 28px;
+            color: red;
+            margin-top: 20px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="scoreboard">
+            <div class="hearts" id="hearts">❤️❤️❤️</div>
+            <div class="score">Score: <span id="score">0</span></div>
+        </div>
+        <div class="problem" id="problem"></div>
+        <input type="text" id="answer" placeholder="?" autofocus>
+        <button id="submit">Submit</button>
+        <div class="feedback" id="feedback"></div>
+        <div id="gameOverMessage"></div>
+        <button id="newGame" style="display: none;">New Game</button>
+    </div>
+
+    <script>
+        // Game variables
+        let hearts = 3;
+        let score = 0;
+        let min = 1;
+        let max = 10;
+        let currentAnswer = 0;
+        let currentOperation = '';
+        
+        const heartDisplay = document.getElementById('hearts');
+        const scoreDisplay = document.getElementById('score');
+        const problemDisplay = document.getElementById('problem');
+        const answerInput = document.getElementById('answer');
+        const submitButton = document.getElementById('submit');
+        const feedbackDisplay = document.getElementById('feedback');
+        const gameOverMessageDisplay = document.getElementById('gameOverMessage');
+        const newGameButton = document.getElementById('newGame');
+
+        // Start the game
+        generateNewProblem();
+
+        // Event listeners
+        submitButton.addEventListener('click', checkAnswer);
+        answerInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+        newGameButton.addEventListener('click', resetGame);
+
+        // Generate a new math problem
+        function generateNewProblem() {
+            // Clear previous feedback
+            feedbackDisplay.textContent = '';
+            feedbackDisplay.className = 'feedback';
+            
+            // Generate random numbers
+            const x = Math.floor(Math.random() * (max - min + 1)) + min;
+            const y = Math.floor(Math.random() * (max - min + 1)) + min;
+            
+            // Choose a random operation (1: +, 2: -, 3: *, 4: ÷)
+            const operation = Math.floor(Math.random() * 4) + 1;
+            
+            let problem = '';
+            
+            switch (operation) {
+                case 1: // Addition
+                    problem = `${x} + ${y} = ?`;
+                    currentAnswer = x + y;
+                    currentOperation = '+';
+                    break;
+                case 2: // Subtraction
+                    problem = `${x} - ${y} = ?`;
+                    currentAnswer = x - y;
+                    currentOperation = '-';
+                    break;
+                case 3: // Multiplication
+                    problem = `${x} × ${y} = ?`;
+                    currentAnswer = x * y;
+                    currentOperation = '×';
+                    break;
+                case 4: // Division
+                    // Create nice division problems with clean answers
+                    const allowedResults = [0.3, 0.6, 0.9, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0];
+                    const resultIndex = Math.floor(Math.random() * allowedResults.length);
+                    const result = allowedResults[resultIndex];
+                    const divisor = Math.floor(Math.random() * 9) + 1;
+                    const dividend = Math.round(result * divisor);
+                    
+                    problem = `${dividend} ÷ ${divisor} = ?`;
+                    currentAnswer = result;
+                    currentOperation = '÷';
+                    break;
+            }
+            
+            problemDisplay.textContent = problem;
+            answerInput.value = '';
+            answerInput.focus();
+        }
+
+        // Check the user's answer
+        function checkAnswer() {
+            if (answerInput.value.trim() === '') return;
+            
+            const userAnswer = parseFloat(answerInput.value);
+            let isCorrect = false;
+            
+            // For division, allow a small tolerance for floating point errors
+            if (currentOperation === '÷') {
+                isCorrect = Math.abs(userAnswer - currentAnswer) < 0.01;
+            } else {
+                isCorrect = userAnswer === currentAnswer;
+            }
+            
+            if (isCorrect) {
+                feedbackDisplay.textContent = 'Correct!';
+                feedbackDisplay.className = 'feedback correct';
+                score++;
+                scoreDisplay.textContent = score;
+                
+                // Increase difficulty based on score
+                if (score < 10) {
+                    max = 10;
+                } else if (score <= 20) {
+                    max = 20;
+                } else if (score <= 30) {
+                    max = 50;
+                } else if (score <= 40) {
+                    max = 100;
+                } else if (score <= 50) {
+                    max = 200;
+                }
+                
+                // Generate a new problem after a short delay
+                setTimeout(generateNewProblem, 1000);
+            } else {
+                feedbackDisplay.textContent = `Incorrect! The correct answer is ${currentAnswer.toFixed(currentOperation === '÷' ? 2 : 0)}`;
+                feedbackDisplay.className = 'feedback incorrect';
+                hearts--;
+                updateHeartDisplay();
+                
+                if (hearts === 0) {
+                    gameOver();
+                } else {
+                    // Generate a new problem after a short delay
+                    setTimeout(generateNewProblem, 1500);
+                }
+            }
+        }
+
+        // Update heart display
+        function updateHeartDisplay() {
+            heartDisplay.textContent = '❤️'.repeat(hearts);
+        }
+
+        // Game over
+        function gameOver() {
+            problemDisplay.textContent = '';
+            answerInput.style.display = 'none';
+            submitButton.style.display = 'none';
+            gameOverMessageDisplay.innerHTML = `<div class="game-over">GAME OVER</div><div>Your score: ${score}</div>`;
+            newGameButton.style.display = 'block';
+        }
+
+        // Reset game
+        function resetGame() {
+            hearts = 3;
+            score = 0;
+            min = 1;
+            max = 10;
+            
+            updateHeartDisplay();
+            scoreDisplay.textContent = '0';
+            answerInput.style.display = 'block';
+            submitButton.style.display = 'block';
+            gameOverMessageDisplay.textContent = '';
+            newGameButton.style.display = 'none';
+            
+            generateNewProblem();
+        }
+    </script>
+</body>
+</html>
